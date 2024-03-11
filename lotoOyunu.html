@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sayısal Loto</title>
+    <style>
+        .input-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .input-container input {
+            margin-right: 10px;
+        }
+
+        .line {
+            width: 100%;
+            height: 2px;
+            background-color: #000;
+            margin: 20px 0;
+        }
+
+        .submit-button {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sayısal Loto Tahmin</h1>
+    <div class="input-container">
+        <input type="number" id="number1" min="1" max="49" onblur="checkDuplicate(this)">
+        <input type="number" id="number2" min="1" max="49" onblur="checkDuplicate(this)">
+        <input type="number" id="number3" min="1" max="49" onblur="checkDuplicate(this)">
+        <input type="number" id="number4" min="1" max="49" onblur="checkDuplicate(this)">
+        <input type="number" id="number5" min="1" max="49" onblur="checkDuplicate(this)">
+        <input type="number" id="number6" min="1" max="49" onblur="checkDuplicate(this)">
+        <button class="submit-button" onclick="checkNumbers()">Tahmin Gir</button>
+    </div>
+    <div class="line"></div>
+    <button id="drawButton" onclick="drawLottery()" disabled>Kurayı Çek</button>
+    <div id="lotteryNumbersContainer" style="display: none;">
+        <h2>Loto Sayıları</h2>
+        <div class="input-container">
+            <input type="text" id="lotteryNumber1" readonly>
+            <input type="text" id="lotteryNumber2" readonly>
+            <input type="text" id="lotteryNumber3" readonly>
+            <input type="text" id="lotteryNumber4" readonly>
+            <input type="text" id="lotteryNumber5" readonly>
+            <input type="text" id="lotteryNumber6" readonly>
+        </div>
+        <div id="knownNumbers"></div>
+        <div id="knownCount"></div>
+    </div>
+
+    <script>
+        // Rastgele sayı üretme fonksiyonu
+        function generateRandomNumber(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // Loto numaralarını seçme fonksiyonu
+        function pickLotteryNumbers() {
+            let lotteryNumbers = [];
+            while (lotteryNumbers.length < 6) {
+                let randomNumber = generateRandomNumber(1, 49);
+                if (!lotteryNumbers.includes(randomNumber)) {
+                    lotteryNumbers.push(randomNumber);
+                }
+            }
+            return lotteryNumbers.sort((a, b) => a - b); // Küçükten büyüğe sıralama
+        }
+
+        // Aynı tahmin kontrol fonksiyonu
+        function checkDuplicate(input) {
+            let enteredNumber = parseInt(input.value);
+            let inputId = input.id;
+            let otherInputs = Array.from(document.getElementsByClassName('input-container')[0].getElementsByTagName('input'));
+            otherInputs.forEach(function(otherInput) {
+                if (otherInput.id !== inputId && parseInt(otherInput.value) === enteredNumber) {
+                    alert("Aynı tahmin bir kez girilebilir.");
+                    input.value = '';
+                }
+            });
+
+            // Aynı tahminleri düzenleme
+            let currentInputIndex = otherInputs.indexOf(input);
+            let currentInputValue = parseInt(input.value);
+            for (let i = currentInputIndex + 1; i < otherInputs.length; i++) {
+                if (parseInt(otherInputs[i].value) === currentInputValue) {
+                    otherInputs[i].value = '';
+                }
+            }
+        }
+
+        // Tahminleri kontrol etme fonksiyonu
+        function checkNumbers() {
+            let userNumbers = [];
+            for (let i = 1; i <= 6; i++) {
+                let userInput = parseInt(document.getElementById(`number${i}`).value);
+                if (isNaN(userInput) || userInput < 1 || userInput > 49) {
+                    alert("Geçersiz giriş. Lütfen 1 ile 49 arasında geçerli bir sayı girin.");
+                    return;
+                }
+                if (userNumbers.includes(userInput)) {
+                    alert("Her sayıyı sadece bir kez seçebilirsiniz.");
+                    return;
+                }
+                userNumbers.push(userInput);
+            }
+
+            // Küçükten büyüğe sıralama
+            userNumbers.sort((a, b) => a - b);
+
+            // Sıralanmış sayıları tahmin kutularına yerleştirme
+            for (let i = 0; i < userNumbers.length; i++) {
+                document.getElementById(`number${i + 1}`).value = userNumbers[i];
+            }
+
+            // Bilinen sayıların bulunması
+            let knownNumbers = userNumbers.filter(number => lotteryNumbers.includes(number));
+            document.getElementById("knownNumbers").textContent = "Bilinen Sayılar: " + (knownNumbers.length > 0 ? knownNumbers.join(", ") : "Yok");
+            document.getElementById("knownCount").textContent = "Bilinen Sayı Sayısı: " + knownNumbers.length;
+
+            // Tahminler girildikten sonra butonları güncelle
+            document.getElementById("drawButton").disabled = false;
+            document.querySelector("button").disabled = true;
+
+            // Otomatik olarak kura çekme
+            drawLottery();
+        }
+
+        // Kurayı çekme fonksiyonu
+        function drawLottery() {
+            let lotteryNumbers = pickLotteryNumbers();
+            document.getElementById("lotteryNumber1").value = lotteryNumbers[0];
+            document.getElementById("lotteryNumber2").value = lotteryNumbers[1];
+            document.getElementById("lotteryNumber3").value = lotteryNumbers[2];
+            document.getElementById("lotteryNumber4").value = lotteryNumbers[3];
+            document.getElementById("lotteryNumber5").value = lotteryNumbers[4];
+            document.getElementById("lotteryNumber6").value = lotteryNumbers[5];
+            document.getElementById("lotteryNumbersContainer").style.display = "block";
+
+            // Bilinen sayıları ve bilinen sayı sayısını hesaplama
+            let userNumbers = [];
+            for (let i = 1; i <= 6; i++) {
+                userNumbers.push(parseInt(document.getElementById(`number${i}`).value));
+            }
+            let knownNumbers = userNumbers.filter(number => lotteryNumbers.includes(number));
+
+            // Bilinen sayıları ve bilinen sayı sayısını ekranda gösterme
+            document.getElementById("knownNumbers").textContent = "Bilinen Sayılar: " + (knownNumbers.length > 0 ? knownNumbers.join(", ") : "Yok");
+            document.getElementById("knownCount").textContent = "Bilinen Sayı Sayısı: " + knownNumbers.length;
+        }
+    </script>
+</body>
+</html>
